@@ -92,6 +92,17 @@ function RateLimitingHandler:access(conf)
     month = conf.month,
     year = conf.year,
   }
+  
+  kong.ctx.plugin.timer = function()
+    local ok, err = timer_at(0, increment, conf, limits, identifier, current_timestamp, 1)
+    if not ok then
+      kong.log.err("failed to create timer: ", err)
+    end
+  end
+  
+  if kong.ctx.plugin.timer then
+    kong.ctx.plugin.timer()
+  end
 
   local usage, stop, err = get_usage(conf, identifier, current_timestamp, limits)
   if err then
@@ -125,12 +136,6 @@ function RateLimitingHandler:access(conf)
     end
   end
 
-  kong.ctx.plugin.timer = function()
-    local ok, err = timer_at(0, increment, conf, limits, identifier, current_timestamp, 1)
-    if not ok then
-      kong.log.err("failed to create timer: ", err)
-    end
-  end
 end
 
 
@@ -143,9 +148,7 @@ end
 
 
 function RateLimitingHandler:log(_)
-  if kong.ctx.plugin.timer then
-    kong.ctx.plugin.timer()
-  end
+
 end
 
 
